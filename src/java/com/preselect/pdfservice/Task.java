@@ -126,7 +126,7 @@ public abstract class Task implements Runnable, Serializable {
         httpClient.send(callback);
     }
 
-    protected abstract void exec() throws IOException, BadPdfFormatException, DocumentException;
+    protected abstract void exec() throws Exception;
 
     protected abstract void cleanup() throws IOException;
 }

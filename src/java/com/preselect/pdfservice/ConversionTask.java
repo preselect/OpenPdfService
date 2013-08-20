@@ -32,6 +32,12 @@ import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static ch.lambdaj.Lambda.*;
+import java.awt.Image;
+import java.awt.image.RenderedImage;
+import javax.imageio.ImageIO;
+import org.ghost4j.document.PDFDocument;
+import org.ghost4j.renderer.RendererException;
+import org.ghost4j.renderer.SimpleRenderer;
 import static org.hamcrest.Matchers.*;
 
 
@@ -46,11 +52,14 @@ public class ConversionTask extends Task {
         private String tocSource;
 
         @Override
-        protected void exec() throws IOException, BadPdfFormatException, DocumentException {            
+        protected void exec() throws Exception {            
             if("ALL".equals(toFormat) || "PDF".equals(toFormat)) {
                 HttpClient httpClient = new HttpClient(tocSource);
                 OutlineItems outline = (OutlineItems) httpClient.getJson(OutlineItems.class);
-                splitIText(outline);
+                splitIText(outline, getInputPath() + getFileName(), getOutputPath());
+            }
+            if("ALL".equals(toFormat) || "IMG".equals(toFormat)) {
+                generateImages(getInputPath() + getFileName(), getOutputPath());
             }
         }
 
@@ -70,9 +79,9 @@ public class ConversionTask extends Task {
                 this.tocSource = tocSource;
         }
 
-        public void splitIText(OutlineItems outline) throws IOException, BadPdfFormatException, DocumentException {
+        public static void splitIText(OutlineItems outline, String inputFile, String outputPath) throws IOException, BadPdfFormatException, DocumentException {
                 List<OutlineItem> outlineItems = filter(having(on(OutlineItem.class).getLevel(), equalTo(1)), outline.getItems());
-                PdfReader reader = new PdfReader(getInputPath() + getFileName());
+                PdfReader reader = new PdfReader(inputFile);
                 reader.consolidateNamedDestinations();
                 int numberOfPages = reader.getNumberOfPages();
 
@@ -94,9 +103,9 @@ public class ConversionTask extends Task {
                                 // Otherwise set the end of last chapter to the end of the document
                                 chapterEnd = numberOfPages;
                         }
-                        File file = new File(getOutputPath());
+                        File file = new File(outputPath);
                         file.mkdirs();
-                        String path = getOutputPath() + File.separator + outlineItem.getId() + ".pdf";
+                        String path = outputPath + File.separator + outlineItem.getId() + ".pdf";
                         copyDocument(reader, chapterStart, chapterEnd, path, outline);
                         reader.close();
 
@@ -153,6 +162,17 @@ public class ConversionTask extends Task {
             } while (iterator.hasNext());
             
             return bookmarks;
+        }
+        
+        private static void generateImages(String inputFile, String outputPath) throws IOException, RendererException, org.ghost4j.document.DocumentException {
+            PDFDocument document = new PDFDocument();
+            document.load(new File(inputFile));
+            SimpleRenderer renderer = new SimpleRenderer();
+            renderer.setResolution(300);
+            List<Image> images = renderer.render(document);
+            for (int i = 0; i < images.size(); i++) {
+                ImageIO.write((RenderedImage) images.get(i), "jpeg", new File(outputPath + (i + 1) + ".png"));
+            }
         }
 
         @Override
