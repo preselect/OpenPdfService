@@ -14,8 +14,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.preselect.pdfservice;
+package com.preselect.pdfservice.tasks;
 
+import com.preselect.pdfservice.resources.Callback;
+import com.preselect.pdfservice.resources.Status;
 import java.awt.Image;
 import java.awt.image.RenderedImage;
 import java.io.File;

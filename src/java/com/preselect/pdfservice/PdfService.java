@@ -16,6 +16,7 @@
  */
 package com.preselect.pdfservice;
 
+import com.preselect.pdfservice.tasks.Task;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.Consumes;

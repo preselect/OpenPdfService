@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.preselect.pdfservice;
+package com.preselect.pdfservice.resources;
 
 import java.io.Serializable;
 import javax.xml.bind.annotation.XmlElement;

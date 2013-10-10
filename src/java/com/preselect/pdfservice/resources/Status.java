@@ -1,4 +1,4 @@
-package com.preselect.pdfservice;
+package com.preselect.pdfservice.resources;
 
 public class Status {
 

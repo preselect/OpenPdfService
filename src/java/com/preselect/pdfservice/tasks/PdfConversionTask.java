@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.preselect.pdfservice;
+package com.preselect.pdfservice.tasks;
 
 import java.io.IOException;
 import java.util.List;
@@ -24,6 +24,11 @@ import com.itextpdf.text.pdf.BadPdfFormatException;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfSmartCopy;
 import com.itextpdf.text.pdf.SimpleBookmark;
+import com.preselect.pdfservice.resources.Callback;
+import com.preselect.pdfservice.clients.HttpClient;
+import com.preselect.pdfservice.resources.OutlineItem;
+import com.preselect.pdfservice.resources.OutlineItems;
+import com.preselect.pdfservice.resources.Status;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
