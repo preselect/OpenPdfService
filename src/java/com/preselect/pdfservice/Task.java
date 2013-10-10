@@ -16,15 +16,12 @@
  */
 package com.preselect.pdfservice;
 
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.pdf.BadPdfFormatException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.codehaus.jackson.annotate.JsonSubTypes;
 import org.codehaus.jackson.annotate.JsonTypeInfo;
-
 
 /**
  * Abstract Task class
@@ -36,97 +33,98 @@ import org.codehaus.jackson.annotate.JsonTypeInfo;
         include = JsonTypeInfo.As.PROPERTY,
         property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = ConversionTask.class, name = "ConversionTask"),})
+        @JsonSubTypes.Type(value = PdfConversionTask.class, name = "PdfConversionTask"),
+        @JsonSubTypes.Type(value = ImgConversionTask.class, name = "ImgConversionTask")})
 public abstract class Task implements Runnable, Serializable {
 
-    private String id;
-    private String documentId;
-    private String inputPath;
-    private String fileName;
-    private String outputPath;
-    private String callbackUrl;
+        private String id;
+        private String documentId;
+        private String inputPath;
+        private String fileName;
+        private String outputPath;
+        private String callbackUrl;
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getDocumentId() {
-        return documentId;
-    }
-
-    public void setDocumentId(String documentId) {
-        this.documentId = documentId;
-    }
-
-    public String getInputPath() {
-        return inputPath;
-    }
-
-    public void setInputPath(String inputPath) {
-        this.inputPath = inputPath;
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
-
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
-
-    public String getOutputPath() {
-        return outputPath;
-    }
-
-    public void setOutputPath(String outputPath) {
-        this.outputPath = outputPath;
-    }
-
-    public String getCallbackUrl() {
-        return callbackUrl;
-    }
-
-    public void setCallbackUrl(String callbackUrl) {
-        this.callbackUrl = callbackUrl;
-    }
-
-    @Override
-    public void run() {
-        try {
-            exec();
-        } catch (Exception ex) {
-            String taskId = id != null ? id.toString() : "Unkown";
-            Logger.getLogger(Task.class.getName()).log(Level.SEVERE, "Error during execution of " + taskId, ex);
-            try {
-                Callback callback = new Callback("ERROR", ex.toString());
-                sendCallback(callback);
-            } catch (Exception ex2) {
-                Logger.getLogger(Task.class.getName()).log(Level.SEVERE, "Not able to send error callback", ex2);
-            }
-        } finally {
-            try {
-                cleanup();
-            } catch (IOException ex) {
-                Logger.getLogger(Task.class.getName()).log(Level.WARNING, "Cleanup failed.", ex);
-            }
+        public String getId() {
+                return id;
         }
-    }
 
-    public void sendData(Object json) {
-        HttpClient httpClient = new HttpClient(outputPath);
-        httpClient.send(json);
-    }
+        public void setId(String id) {
+                this.id = id;
+        }
 
-    public void sendCallback(Callback callback) {
-        HttpClient httpClient = new HttpClient(callbackUrl);
-        httpClient.send(callback);
-    }
+        public String getDocumentId() {
+                return documentId;
+        }
 
-    protected abstract void exec() throws Exception;
+        public void setDocumentId(String documentId) {
+                this.documentId = documentId;
+        }
 
-    protected abstract void cleanup() throws IOException;
+        public String getInputPath() {
+                return inputPath;
+        }
+
+        public void setInputPath(String inputPath) {
+                this.inputPath = inputPath;
+        }
+
+        public String getFileName() {
+                return fileName;
+        }
+
+        public void setFileName(String fileName) {
+                this.fileName = fileName;
+        }
+
+        public String getOutputPath() {
+                return outputPath;
+        }
+
+        public void setOutputPath(String outputPath) {
+                this.outputPath = outputPath;
+        }
+
+        public String getCallbackUrl() {
+                return callbackUrl;
+        }
+
+        public void setCallbackUrl(String callbackUrl) {
+                this.callbackUrl = callbackUrl;
+        }
+
+        @Override
+        public void run() {
+                try {
+                        exec();
+                } catch (Exception ex) {
+                        String taskId = id != null ? id.toString() : "Unkown";
+                        Logger.getLogger(Task.class.getName()).log(Level.SEVERE, "Error during execution of " + taskId, ex);
+                        try {
+                                Callback callback = new Callback("ERROR", ex.toString());
+                                sendCallback(callback);
+                        } catch (Exception ex2) {
+                                Logger.getLogger(Task.class.getName()).log(Level.SEVERE, "Not able to send error callback", ex2);
+                        }
+                } finally {
+                        try {
+                                cleanup();
+                        } catch (IOException ex) {
+                                Logger.getLogger(Task.class.getName()).log(Level.WARNING, "Cleanup failed.", ex);
+                        }
+                }
+        }
+
+        public void sendData(Object json) {
+                HttpClient httpClient = new HttpClient(outputPath);
+                httpClient.send(json);
+        }
+
+        public void sendCallback(Callback callback) {
+                HttpClient httpClient = new HttpClient(callbackUrl);
+                httpClient.send(callback);
+        }
+
+        protected abstract void exec() throws Exception;
+
+        protected abstract void cleanup() throws IOException;
 }

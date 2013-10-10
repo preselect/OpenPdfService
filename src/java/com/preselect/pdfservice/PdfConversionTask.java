@@ -32,43 +32,25 @@ import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static ch.lambdaj.Lambda.*;
-import java.awt.Image;
-import java.awt.image.RenderedImage;
-import javax.imageio.ImageIO;
-import org.ghost4j.document.PDFDocument;
-import org.ghost4j.renderer.RendererException;
-import org.ghost4j.renderer.SimpleRenderer;
 import static org.hamcrest.Matchers.*;
 
 
 /**
- * Conversion Task class
+ * Pdf Conversion Task class
  *
  * @author Moritz Munte <m.munte@preselect.com>
  */
-public class ConversionTask extends Task {
+public class PdfConversionTask extends Task {
 
-        private String toFormat;
         private String tocSource;
 
         @Override
-        protected void exec() throws Exception {            
-            if("ALL".equals(toFormat) || "PDF".equals(toFormat)) {
+        protected void exec() throws Exception {
+                sendCallback(new Callback(Status.IN_PROGRESS, "PDF conversion started"));
                 HttpClient httpClient = new HttpClient(tocSource);
                 OutlineItems outline = (OutlineItems) httpClient.getJson(OutlineItems.class);
                 splitIText(outline, getInputPath() + getFileName(), getOutputPath());
-            }
-            if("ALL".equals(toFormat) || "IMG".equals(toFormat)) {
-                generateImages(getInputPath() + getFileName(), getOutputPath());
-            }
-        }
-
-        public String getToFormat() {
-                return toFormat;
-        }
-
-        public void setToFormat(String toFormat) {
-                this.toFormat = toFormat;
+                sendCallback(new Callback(Status.IN_PROGRESS, "PDF conversion completed"));
         }
 
         public String getTocSource() {
@@ -85,6 +67,10 @@ public class ConversionTask extends Task {
                 reader.consolidateNamedDestinations();
                 int numberOfPages = reader.getNumberOfPages();
 
+                // Check if there are outline items
+                if (outlineItems.size() <= 0) {
+                        throw new IllegalArgumentException("No outline items found!");
+                }
                 // Find start and end of each chapter
                 for (int i = 0; i < outlineItems.size(); i++) {
                         OutlineItem outlineItem = outlineItems.get(i);
@@ -107,10 +93,10 @@ public class ConversionTask extends Task {
                         file.mkdirs();
                         String path = outputPath + File.separator + outlineItem.getId() + ".pdf";
                         copyDocument(reader, chapterStart, chapterEnd, path, outline);
-                        reader.close();
 
                         Logger.getLogger(Task.class.getName()).log(Level.INFO, "Chapter: {0} - Start:{1} <-> End: {2}", new Object[]{outlineItem.getTitle(), chapterStart, chapterEnd});
                 }
+                reader.close();
         }
 
         private static void copyDocument(PdfReader reader, int start, int end, String path, OutlineItems outline) throws IOException, DocumentException {
@@ -123,10 +109,14 @@ public class ConversionTask extends Task {
                 }
                 List<OutlineItem> outlineForChapter = getOutlineBetweenPages(outline, start, end);
                 Iterator<OutlineItem> iterator = outlineForChapter.iterator();
-                if(iterator.hasNext()) {       
-                    List<HashMap<String, Object>> bookmarksForChapter = getBookmarks(iterator.next(), iterator, 1);
-                    SimpleBookmark.shiftPageNumbers(bookmarksForChapter, (-start + 1), null);
-                    copy.setOutlines(bookmarksForChapter);
+                if (iterator.hasNext()) {
+                        List<HashMap<String, Object>> bookmarksForChapter = getBookmarks(iterator.next(), iterator, 1);
+                        SimpleBookmark.shiftPageNumbers(bookmarksForChapter, (-start + 1), null);
+                        copy.setOutlines(bookmarksForChapter);
+                }
+                if (outlineForChapter.size() > 0) {
+                        OutlineItem firstOutline = outlineForChapter.get(0);
+                        document.addTitle(firstOutline.getTitle());
                 }
                 document.addCreator("Content Select");
                 document.close();
@@ -141,38 +131,27 @@ public class ConversionTask extends Task {
 
                 return outlineItems;
         }
-        
+
         private static List<HashMap<String, Object>> getBookmarks(OutlineItem currentOuline, Iterator<OutlineItem> iterator, int level) {
-            List<HashMap<String, Object>> bookmarks = new ArrayList<HashMap<String, Object>>();
-            do {                
-                HashMap<String, Object> bookmark = new HashMap<String, Object>();
-                bookmarks.add(bookmark);
-                bookmark.put("Title", currentOuline.getTitle());
-                bookmark.put("Action", "GoTo");
-                bookmark.put("Page", String.valueOf(currentOuline.getPage()));
-                if(iterator.hasNext()) {
-                    currentOuline = iterator.next();
-                    if(currentOuline.getLevel() > level) {
-                        bookmark.put("Kids", getBookmarks(currentOuline, iterator, currentOuline.getLevel()));
-                    }
-                    if(currentOuline.getLevel() < level) {
-                        break;
-                    }
-                }
-            } while (iterator.hasNext());
-            
-            return bookmarks;
-        }
-        
-        private static void generateImages(String inputFile, String outputPath) throws IOException, RendererException, org.ghost4j.document.DocumentException {
-            PDFDocument document = new PDFDocument();
-            document.load(new File(inputFile));
-            SimpleRenderer renderer = new SimpleRenderer();
-            renderer.setResolution(300);
-            List<Image> images = renderer.render(document);
-            for (int i = 0; i < images.size(); i++) {
-                ImageIO.write((RenderedImage) images.get(i), "jpeg", new File(outputPath + (i + 1) + ".png"));
-            }
+                List<HashMap<String, Object>> bookmarks = new ArrayList<HashMap<String, Object>>();
+                do {
+                        HashMap<String, Object> bookmark = new HashMap<String, Object>();
+                        bookmarks.add(bookmark);
+                        bookmark.put("Title", currentOuline.getTitle());
+                        bookmark.put("Action", "GoTo");
+                        bookmark.put("Page", String.valueOf(currentOuline.getPage()) + " Fit");
+                        if (iterator.hasNext()) {
+                                currentOuline = iterator.next();
+                                if (currentOuline.getLevel() > level) {
+                                        bookmark.put("Kids", getBookmarks(currentOuline, iterator, currentOuline.getLevel()));
+                                }
+                                if (currentOuline.getLevel() < level) {
+                                        break;
+                                }
+                        }
+                } while (iterator.hasNext());
+
+                return bookmarks;
         }
 
         @Override
